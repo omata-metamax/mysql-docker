@@ -28,17 +28,17 @@ if [ "$1" = 'mysqld' ]; then
 			exit 1
 		fi
 		if [ ! -d "$DATADIR" ]; then
-			mkdir -p $DATADIR
+			mkdir -p "$DATADIR"
 		fi
 		chown -R mysql:mysql "$DATADIR"
 
 		echo 'Running mysql_install_db'
-		mysql_install_db --user=mysql --datadir=$DATADIR --rpm --basedir=/usr/local/mysql
+		mysql_install_db --user=mysql --datadir="$DATADIR" --rpm --basedir=/usr/local/mysql
 		echo 'Finished mysql_install_db'
 
-		mysqld --user=mysql --datadir=$DATADIR --skip-networking --basedir=/usr/local/mysql &
+		mysqld --user=mysql --datadir="$DATADIR" --skip-networking --basedir=/usr/local/mysql &
 		for i in $(seq 30 -1 0); do
-			[ -S $SOCKET ] && break
+			[ -S "$SOCKET" ] && break
 			echo 'MySQL init process in progress...'
 			sleep 1
 		done
@@ -73,9 +73,9 @@ if [ "$1" = 'mysqld' ]; then
 
 		echo 'FLUSH PRIVILEGES ;' >> "$tempSqlFile"
 
-		mysql -uroot < $tempSqlFile
+		mysql -uroot < "$tempSqlFile"
 
-		rm -f $tempSqlFile
+		rm -f "$tempSqlFile"
 		kill $(cat $PIDFILE)
 		for i in $(seq 30 -1 0); do
 			[ -S $SOCKET ] || break
