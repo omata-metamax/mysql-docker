@@ -10,6 +10,7 @@ get_option () {
 	echo $ret
 }
 
+# if command starts with an option, prepend mysqld
 if [ "${1:0:1}" = '-' ]; then
 	set -- mysqld "$@"
 fi
@@ -31,9 +32,10 @@ if [ "$1" = 'mysqld' ]; then
 		fi
 		chown -R mysql:mysql "$DATADIR"
 
-		echo 'Running mysql_install_db'
-		mysql_install_db --user=mysql --datadir="$DATADIR" --insecure --mysqld-file=/usr/sbin/mysqld
-		echo 'Finished mysql_install_db'
+		echo 'Initializing database'
+		mysqld --initialize-insecure=on --datadir="$DATADIR"
+		echo 'Database initialized'
+
 		mysqld --user=mysql --datadir="$DATADIR" --skip-networking &
 		for i in $(seq 30 -1 0); do
 			[ -S $SOCKET ] && break
@@ -45,16 +47,16 @@ if [ "$1" = 'mysqld' ]; then
 			exit 1
 		fi
 
-		# Workaround for bug in 5.7 that doesn't clean up after itself correctly 
-		rm $DATADIR/ib_logfile0
-		rm $DATADIR/ib_logfile1
-		rm $DATADIR/ibdata1
 		# These statements _must_ be on individual lines, and _must_ end with
 		# semicolons (no line breaks or comments are permitted).
 		# TODO proper SQL escaping on ALL the things D:
 
 		tempSqlFile=$(mktemp /tmp/mysql-first-time.XXXXXX.sql)
 		cat > "$tempSqlFile" <<-EOSQL
+			-- What's done in this file shouldn't be replicated
+			--  or products like mysql-fabric won't work
+			SET @@SESSION.SQL_LOG_BIN=0;
+			
 			DELETE FROM mysql.user ;
 			CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}' ;
 			GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION ;

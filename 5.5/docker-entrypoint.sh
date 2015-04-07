@@ -10,6 +10,7 @@ get_option () {
 	echo $ret
 }
 
+# if command starts with an option, prepend mysqld
 if [ "${1:0:1}" = '-' ]; then
 	set -- mysqld "$@"
 fi
@@ -53,6 +54,10 @@ if [ "$1" = 'mysqld' ]; then
 
 		tempSqlFile=$(mktemp /tmp/mysql-first-time.XXXXXX.sql)
 		cat > "$tempSqlFile" <<-EOSQL
+			-- What's done in this file shouldn't be replicated
+			--  or products like mysql-fabric won't work
+			SET @@SESSION.SQL_LOG_BIN=0;
+			
 			DELETE FROM mysql.user ;
 			CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}' ;
 			GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION ;
