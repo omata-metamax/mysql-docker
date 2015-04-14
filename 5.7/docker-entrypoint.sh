@@ -27,9 +27,8 @@ if [ "$1" = 'mysqld' ]; then
 			echo >&2 '  Did you forget to add -e MYSQL_ROOT_PASSWORD=... ?'
 			exit 1
 		fi
-		if [ ! -d "$DATADIR" ]; then
-			mkdir -p "$DATADIR"
-		fi
+
+		mkdir -p "$DATADIR"
 		chown -R mysql:mysql "$DATADIR"
 
 		echo 'Initializing database'
@@ -64,7 +63,7 @@ if [ "$1" = 'mysqld' ]; then
 		EOSQL
 
 		if [ "$MYSQL_DATABASE" ]; then
-			echo "CREATE DATABASE IF NOT EXISTS \`"$MYSQL_DATABASE"\` ;" >> "$tempSqlFile"
+			echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;" >> "$tempSqlFile"
 		fi
 
 		if [ "$MYSQL_USER" -a "$MYSQL_PASSWORD" ]; then
@@ -81,7 +80,7 @@ if [ "$1" = 'mysqld' ]; then
 		rm -f "$tempSqlFile"
 		kill $(cat $PIDFILE)
 		for i in $(seq 30 -1 0); do
-			[ -S $SOCKET ] || break
+			[ -f "$PIDFILE" ] || break
 			echo 'MySQL init process in progress...'
 			sleep 1
 		done
